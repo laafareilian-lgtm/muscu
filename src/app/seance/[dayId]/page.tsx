@@ -2,14 +2,15 @@
 
 import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Timer } from "lucide-react";
 import Link from "next/link";
 import { ExerciseCard } from "@/components/ExerciseCard";
 import { RestTimer } from "@/components/RestTimer";
 import { useStorage } from "@/components/Providers";
 import { useRestTimer } from "@/hooks/useRestTimer";
+import { useSessionChrono } from "@/hooks/useSessionChrono";
 import { getDayById } from "@/lib/programme";
-import { getLastPerformance } from "@/lib/utils";
+import { formatTimer, getLastPerformance } from "@/lib/utils";
 
 function SeanceLoading() {
   return (
@@ -57,6 +58,8 @@ function SeanceContent({ dayId }: { dayId: string }) {
     activeSession?.dayId === dayId && !activeSession.completedAt
       ? activeSession
       : null;
+
+  const elapsed = useSessionChrono(session?.startedAt);
 
   const handleSetChange = useCallback(
     (exerciseIndex: number, setIndex: number, patch: { weight?: number; reps?: number }) => {
@@ -162,11 +165,20 @@ function SeanceContent({ dayId }: { dayId: string }) {
               {doneSets}/{totalSets} séries · {day.description}
             </p>
           </div>
-          <div className="h-2 w-16 overflow-hidden rounded-full bg-zinc-800" aria-hidden>
+          <div className="flex flex-col items-end gap-1.5">
             <div
-              className="h-full rounded-full bg-emerald-400 transition-all duration-300"
-              style={{ width: `${totalSets ? (doneSets / totalSets) * 100 : 0}%` }}
-            />
+              className="flex items-center gap-1.5 rounded-xl bg-zinc-900 px-2.5 py-1.5 font-mono text-sm font-semibold tabular-nums text-emerald-400"
+              aria-label={`Durée de séance ${formatTimer(elapsed)}`}
+            >
+              <Timer className="h-3.5 w-3.5" />
+              {formatTimer(elapsed)}
+            </div>
+            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800" aria-hidden>
+              <div
+                className="h-full rounded-full bg-emerald-400 transition-all duration-300"
+                style={{ width: `${totalSets ? (doneSets / totalSets) * 100 : 0}%` }}
+              />
+            </div>
           </div>
         </div>
       </header>
