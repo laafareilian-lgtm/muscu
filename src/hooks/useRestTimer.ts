@@ -7,6 +7,41 @@ interface UseRestTimerOptions {
   vibrationEnabled?: boolean;
 }
 
+function getAudioContextClass(): typeof AudioContext | null {
+  if (typeof window === "undefined") return null;
+  return (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext ||
+    null
+  );
+}
+
+/** Triple bip net, pensé pour passer dans les écouteurs. */
+function scheduleAlarm(ctx: AudioContext) {
+  const now = ctx.currentTime;
+  const pattern = [
+    { at: 0, freq: 880, dur: 0.18 },
+    { at: 0.28, freq: 880, dur: 0.18 },
+    { at: 0.56, freq: 1175, dur: 0.35 },
+  ];
+
+  for (const { at, freq, dur } of pattern) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const t0 = now + at;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.45, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+}
+
 export function useRestTimer(options: UseRestTimerOptions = {}) {
   const { soundEnabled = true, vibrationEnabled = true } = options;
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -14,6 +49,17 @@ export function useRestTimer(options: UseRestTimerOptions = {}) {
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const remainingRef = useRef(0);
+  const soundEnabledRef = useRef(soundEnabled);
+  const vibrationEnabledRef = useRef(vibrationEnabled);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    vibrationEnabledRef.current = vibrationEnabled;
+  }, [vibrationEnabled]);
 
   const clear = useCallback(() => {
     if (intervalRef.current) {
@@ -22,73 +68,78 @@ export function useRestTimer(options: UseRestTimerOptions = {}) {
     }
   }, []);
 
-  const playBeep = useCallback(() => {
-    if (!soundEnabled) return;
-    try {
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContextClass();
+  const ensureAudio = useCallback(async (): Promise<AudioContext | null> => {
+    const AudioContextClass = getAudioContextClass();
+    if (!AudioContextClass) return null;
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContextClass();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === "suspended") {
+      try {
+        await ctx.resume();
+      } catch {
+        // Ignore — will retry on play
       }
-      const ctx = audioCtxRef.current;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      osc.type = "sine";
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.4);
+    }
+    return ctx;
+  }, []);
 
-      // Second beep
-      setTimeout(() => {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.frequency.value = 1100;
-        osc2.type = "sine";
-        gain2.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-        osc2.start(ctx.currentTime);
-        osc2.stop(ctx.currentTime + 0.5);
-      }, 200);
+  /** Pendant le geste utilisateur (coche) pour autoriser le son iOS/Android. */
+  const unlockAudio = useCallback(() => {
+    void ensureAudio();
+  }, [ensureAudio]);
+
+  const playBeep = useCallback(async () => {
+    if (!soundEnabledRef.current) return;
+    try {
+      const ctx = await ensureAudio();
+      if (!ctx) return;
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+      scheduleAlarm(ctx);
     } catch {
       // Audio not available
     }
-  }, [soundEnabled]);
+  }, [ensureAudio]);
 
   const vibrate = useCallback(() => {
-    if (!vibrationEnabled) return;
+    if (!vibrationEnabledRef.current) return;
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate([200, 100, 200, 100, 400]);
     }
-  }, [vibrationEnabled]);
+  }, []);
+
+  const finishCountdown = useCallback(() => {
+    clear();
+    remainingRef.current = 0;
+    setSecondsLeft(0);
+    setIsRunning(false);
+    void playBeep();
+    vibrate();
+  }, [clear, playBeep, vibrate]);
+
+  const tick = useCallback(() => {
+    if (remainingRef.current <= 1) {
+      finishCountdown();
+      return;
+    }
+    remainingRef.current -= 1;
+    setSecondsLeft(remainingRef.current);
+  }, [finishCountdown]);
 
   const start = useCallback(
     (seconds: number) => {
+      unlockAudio();
       clear();
+      remainingRef.current = seconds;
       setTotalSeconds(seconds);
       setSecondsLeft(seconds);
       setIsRunning(true);
-
-      intervalRef.current = setInterval(() => {
-        setSecondsLeft((prev) => {
-          if (prev <= 1) {
-            clear();
-            setIsRunning(false);
-            playBeep();
-            vibrate();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      intervalRef.current = setInterval(tick, 1000);
     },
-    [clear, playBeep, vibrate]
+    [clear, unlockAudio, tick]
   );
 
   const pause = useCallback(() => {
@@ -97,31 +148,23 @@ export function useRestTimer(options: UseRestTimerOptions = {}) {
   }, [clear]);
 
   const resume = useCallback(() => {
-    if (secondsLeft <= 0 || isRunning) return;
+    if (remainingRef.current <= 0 || isRunning) return;
+    unlockAudio();
     setIsRunning(true);
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clear();
-          setIsRunning(false);
-          playBeep();
-          vibrate();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, [secondsLeft, isRunning, clear, playBeep, vibrate]);
+    intervalRef.current = setInterval(tick, 1000);
+  }, [isRunning, unlockAudio, tick]);
 
   const stop = useCallback(() => {
     clear();
+    remainingRef.current = 0;
     setIsRunning(false);
     setSecondsLeft(0);
     setTotalSeconds(0);
   }, [clear]);
 
   const addTime = useCallback((extra: number) => {
-    setSecondsLeft((prev) => Math.max(0, prev + extra));
+    remainingRef.current = Math.max(0, remainingRef.current + extra);
+    setSecondsLeft(remainingRef.current);
     setTotalSeconds((prev) => Math.max(0, prev + extra));
   }, []);
 
