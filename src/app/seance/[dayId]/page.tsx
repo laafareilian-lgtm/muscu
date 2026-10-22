@@ -159,21 +159,21 @@ function SeanceContent({ dayId }: { dayId: string }) {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-hidden">
             <h1 className="truncate text-lg font-bold text-white">{day.name}</h1>
-            <p className="text-xs text-zinc-500">
+            <p className="truncate text-xs text-zinc-500">
               {doneSets}/{totalSets} séries · {day.description}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
             <div
-              className="flex items-center gap-1.5 rounded-xl bg-zinc-900 px-2.5 py-1.5 font-mono text-sm font-semibold tabular-nums text-emerald-400"
+              className="flex items-center gap-1 rounded-xl bg-zinc-900 px-2 py-1.5 font-mono text-xs font-semibold tabular-nums text-emerald-400 sm:gap-1.5 sm:px-2.5 sm:text-sm"
               aria-label={`Durée de séance ${formatTimer(elapsed)}`}
             >
-              <Timer className="h-3.5 w-3.5" />
+              <Timer className="h-3.5 w-3.5 shrink-0" />
               {formatTimer(elapsed)}
             </div>
-            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800" aria-hidden>
+            <div className="h-1.5 w-14 overflow-hidden rounded-full bg-zinc-800 sm:w-16" aria-hidden>
               <div
                 className="h-full rounded-full bg-emerald-400 transition-all duration-300"
                 style={{ width: `${totalSets ? (doneSets / totalSets) * 100 : 0}%` }}
@@ -183,7 +183,7 @@ function SeanceContent({ dayId }: { dayId: string }) {
         </div>
       </header>
 
-      <div className="flex flex-col gap-8 px-4 py-6">
+      <div className="flex w-full max-w-full flex-col gap-8 overflow-x-hidden px-3 py-6 sm:px-4">
         {day.exercises.map((config, ei) => {
           const log = session.exercises[ei];
           if (!log) return null;
@@ -202,15 +202,17 @@ function SeanceContent({ dayId }: { dayId: string }) {
         })}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-lg border-t border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur-lg safe-bottom">
-        <button
-          type="button"
-          onClick={handleFinish}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-4 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-500/20 transition-transform active:scale-[0.98]"
-        >
-          <CheckCircle2 className="h-5 w-5" />
-          Terminer et enregistrer
-        </button>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-lg safe-bottom">
+        <div className="mx-auto w-full max-w-lg px-3 py-3 sm:px-4">
+          <button
+            type="button"
+            onClick={handleFinish}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-4 text-sm font-bold text-zinc-950 shadow-lg shadow-emerald-500/20 transition-transform active:scale-[0.98] sm:text-base"
+          >
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <span className="truncate">Terminer et enregistrer</span>
+          </button>
+        </div>
       </div>
 
       <RestTimer

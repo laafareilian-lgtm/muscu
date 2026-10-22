@@ -50,10 +50,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-50">
+      <body className="flex min-h-full max-w-full flex-col overflow-x-hidden bg-zinc-950 text-zinc-50">
         <Providers>
           <RegisterSW />
-          <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-1 flex-col">
+          <div
+            data-app-shell
+            className="mx-auto flex min-h-dvh w-full max-w-lg flex-1 flex-col overflow-x-hidden"
+          >
             {children}
             <BottomNav />
           </div>

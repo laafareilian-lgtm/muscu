@@ -50,7 +50,7 @@ export function HistoryList({ sessions, onDelete }: HistoryListProps) {
                   {formatDateLong(session.completedAt!)}
                 </p>
               </div>
-              <div className="mt-3 flex gap-4 text-xs text-zinc-500">
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
                 <span>
                   <strong className="text-zinc-300">{totalSets}</strong> séries
                 </span>
