@@ -17,8 +17,10 @@ export interface DayConfig {
 
 export interface SetLog {
   setNumber: number;
-  weight: number;
-  reps: number;
+  /** null = champ vide (saisie libre) */
+  weight: number | null;
+  /** null = champ vide (saisie libre) */
+  reps: number | null;
   completed: boolean;
 }
 

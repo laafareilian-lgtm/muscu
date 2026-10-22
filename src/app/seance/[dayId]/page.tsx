@@ -62,7 +62,7 @@ function SeanceContent({ dayId }: { dayId: string }) {
   const elapsed = useSessionChrono(session?.startedAt);
 
   const handleSetChange = useCallback(
-    (exerciseIndex: number, setIndex: number, patch: { weight?: number; reps?: number }) => {
+    (exerciseIndex: number, setIndex: number, patch: { weight?: number | null; reps?: number | null }) => {
       updateActiveSession((prev) => {
         const exercises = prev.exercises.map((ex, ei) => {
           if (ei !== exerciseIndex) return ex;

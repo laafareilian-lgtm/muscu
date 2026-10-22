@@ -169,7 +169,7 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
                         Série {set.setNumber}
                       </span>
                       <span className="ml-auto font-mono text-sm font-semibold tabular-nums text-white">
-                        {set.weight} kg × {set.reps}
+                        {set.weight ?? "—"} kg × {set.reps ?? "—"}
                       </span>
                     </li>
                   ))}

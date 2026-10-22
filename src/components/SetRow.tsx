@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import type { SetLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -17,12 +18,23 @@ function CompactStepper({
   min = 0,
   label,
 }: {
-  value: number;
-  onChange: (v: number) => void;
+  value: number | null;
+  onChange: (v: number | null) => void;
   step?: number;
   min?: number;
   label: string;
 }) {
+  const [text, setText] = useState(value === null ? "" : String(value));
+
+  useEffect(() => {
+    setText(value === null ? "" : String(value));
+  }, [value]);
+
+  const bump = (delta: number) => {
+    const base = value ?? 0;
+    onChange(Math.max(min, +(base + delta).toFixed(1)));
+  };
+
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <span className="w-10 shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
@@ -31,25 +43,47 @@ function CompactStepper({
       <button
         type="button"
         aria-label={`Diminuer ${label}`}
-        onClick={() => onChange(Math.max(min, +(value - step).toFixed(1)))}
+        onClick={() => bump(-step)}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-300 active:bg-zinc-700 active:scale-95"
       >
         <Minus className="h-4 w-4" />
       </button>
       <input
-        type="number"
+        type="text"
         inputMode="decimal"
-        value={value}
+        placeholder="—"
+        value={text}
         onChange={(e) => {
-          const n = parseFloat(e.target.value);
-          onChange(Number.isFinite(n) ? Math.max(min, n) : 0);
+          const raw = e.target.value.replace(",", ".");
+          if (raw !== "" && !/^\d*\.?\d*$/.test(raw)) return;
+          setText(raw);
+          if (raw === "" || raw === ".") {
+            onChange(null);
+            return;
+          }
+          const n = parseFloat(raw);
+          if (Number.isFinite(n)) onChange(Math.max(min, n));
         }}
-        className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 text-center text-base font-semibold tabular-nums text-white outline-none focus:border-zinc-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        onFocus={(e) => e.target.select()}
+        onBlur={() => {
+          if (text === "" || text === ".") {
+            setText("");
+            onChange(null);
+            return;
+          }
+          const n = parseFloat(text);
+          if (Number.isFinite(n)) {
+            const cleaned = Math.max(min, +n.toFixed(1));
+            setText(String(cleaned));
+            onChange(cleaned);
+          }
+        }}
+        className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 text-center text-base font-semibold tabular-nums text-white outline-none placeholder:text-zinc-600 focus:border-zinc-500"
       />
       <button
         type="button"
         aria-label={`Augmenter ${label}`}
-        onClick={() => onChange(+(value + step).toFixed(1))}
+        onClick={() => bump(step)}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-300 active:bg-zinc-700 active:scale-95"
       >
         <Plus className="h-4 w-4" />

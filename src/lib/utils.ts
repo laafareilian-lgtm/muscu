@@ -45,8 +45,9 @@ export function formatTimer(seconds: number): string {
 export function createEmptySets(targetSets: number, last?: LastSetSummary | null): SetLog[] {
   return Array.from({ length: targetSets }, (_, i) => ({
     setNumber: i + 1,
-    weight: last?.weight ?? 0,
-    reps: last?.reps ?? 0,
+    // Prérempli seulement s'il y a un historique ; sinon champs vides
+    weight: last != null ? last.weight : null,
+    reps: last != null ? last.reps : null,
     completed: false,
   }));
 }
@@ -63,12 +64,14 @@ export function getLastPerformance(
   for (const session of completed) {
     const ex = session.exercises.find((e) => e.exerciseId === exerciseId);
     if (!ex) continue;
-    const done = ex.sets.filter((s) => s.completed && (s.weight > 0 || s.reps > 0));
+    const done = ex.sets.filter(
+      (s) => s.completed && ((s.weight ?? 0) > 0 || (s.reps ?? 0) > 0)
+    );
     if (done.length === 0) continue;
-    const best = done.reduce((a, b) => (b.weight >= a.weight ? b : a));
+    const best = done.reduce((a, b) => ((b.weight ?? 0) >= (a.weight ?? 0) ? b : a));
     return {
-      weight: best.weight,
-      reps: best.reps,
+      weight: best.weight ?? 0,
+      reps: best.reps ?? 0,
       date: session.completedAt!,
     };
   }
@@ -85,13 +88,13 @@ export function getLastSessionDate(sessions: WorkoutSession[], dayId: string): s
 export function getMaxWeight(sets: SetLog[]): number {
   const done = sets.filter((s) => s.completed);
   if (done.length === 0) return 0;
-  return Math.max(...done.map((s) => s.weight));
+  return Math.max(...done.map((s) => s.weight ?? 0));
 }
 
 export function getVolume(sets: SetLog[]): number {
   return sets
     .filter((s) => s.completed)
-    .reduce((sum, s) => sum + s.weight * s.reps, 0);
+    .reduce((sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0), 0);
 }
 
 export function getExerciseProgress(
