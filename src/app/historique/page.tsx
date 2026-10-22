@@ -1,11 +1,12 @@
 "use client";
 
+import { BackupPanel } from "@/components/BackupPanel";
 import { HistoryList } from "@/components/HistoryList";
 import { ProgressChart } from "@/components/ProgressChart";
 import { useStorage } from "@/components/Providers";
 
 export default function HistoriquePage() {
-  const { ready, sessions, deleteSession } = useStorage();
+  const { ready, sessions, deleteSession, reloadFromStorage } = useStorage();
 
   return (
     <main className="safe-top flex flex-1 flex-col px-4 pb-28 pt-6">
@@ -32,6 +33,7 @@ export default function HistoriquePage() {
             </h2>
             <HistoryList sessions={sessions} onDelete={deleteSession} />
           </section>
+          <BackupPanel onImported={reloadFromStorage} />
         </div>
       )}
     </main>

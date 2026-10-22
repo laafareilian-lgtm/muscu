@@ -112,6 +112,13 @@ export function useWorkoutStorage() {
     [sessions, persistSessions]
   );
 
+  /** Recharge tout depuis le LocalStorage (après import backup). */
+  const reloadFromStorage = useCallback(() => {
+    setSessions(loadSessions());
+    setActiveSession(loadActiveSession());
+    setSettingsState(loadSettings());
+  }, []);
+
   return {
     ready,
     sessions,
@@ -123,5 +130,6 @@ export function useWorkoutStorage() {
     completeSession,
     discardActiveSession,
     deleteSession,
+    reloadFromStorage,
   };
 }
