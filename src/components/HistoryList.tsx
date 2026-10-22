@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import type { WorkoutSession } from "@/lib/types";
 import { formatDateLong, getVolume } from "@/lib/utils";
@@ -36,43 +37,50 @@ export function HistoryList({ sessions, onDelete }: HistoryListProps) {
         );
 
         return (
-          <li
-            key={session.id}
-            className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4"
-          >
-            <div className="flex items-start justify-between gap-3">
+          <li key={session.id} className="relative">
+            <Link
+              href={`/historique/${session.id}`}
+              className="block rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 pr-14 transition-colors active:bg-zinc-800/80"
+            >
               <div>
-                <h3 className="text-base font-semibold text-white">{session.dayName}</h3>
+                <h3 className="text-base font-semibold text-white">
+                  {session.dayName}
+                </h3>
                 <p className="text-sm capitalize text-zinc-500">
                   {formatDateLong(session.completedAt!)}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm("Supprimer cette séance ?")) onDelete(session.id);
-                }}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-600 transition-colors active:bg-zinc-800 active:text-red-400"
-                aria-label="Supprimer"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="mt-3 flex gap-4 text-xs text-zinc-500">
-              <span>
-                <strong className="text-zinc-300">{totalSets}</strong> séries
-              </span>
-              <span>
-                <strong className="text-zinc-300">
-                  {Math.round(totalVolume).toLocaleString("fr-FR")}
-                </strong>{" "}
-                kg volume
-              </span>
-              <span>
-                <strong className="text-zinc-300">{session.exercises.length}</strong>{" "}
-                exercices
-              </span>
-            </div>
+              <div className="mt-3 flex gap-4 text-xs text-zinc-500">
+                <span>
+                  <strong className="text-zinc-300">{totalSets}</strong> séries
+                </span>
+                <span>
+                  <strong className="text-zinc-300">
+                    {Math.round(totalVolume).toLocaleString("fr-FR")}
+                  </strong>{" "}
+                  kg volume
+                </span>
+                <span>
+                  <strong className="text-zinc-300">
+                    {session.exercises.length}
+                  </strong>{" "}
+                  exercices
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-emerald-500/80">Voir le détail →</p>
+            </Link>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (confirm("Supprimer cette séance ?")) onDelete(session.id);
+              }}
+              className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-xl text-zinc-600 transition-colors active:bg-zinc-800 active:text-red-400"
+              aria-label="Supprimer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </li>
         );
       })}
